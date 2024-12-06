@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ilx's website</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js"></script>
     <style>
         body {
             margin: 0;
@@ -119,17 +121,35 @@
     </footer>
 
     <script>
-        // Load rankings from localStorage or initialize an empty array
-        const rankings = JSON.parse(localStorage.getItem('rankings')) || [];
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.getDatabase(app);
 
         // Function to display rankings
         function displayRankings() {
             const rankingList = document.getElementById('rankingList');
             rankingList.innerHTML = ''; // Clear the list
-            rankings.forEach((name, index) => {
-                const li = document.createElement('li');
-                li.textContent = `#${index + 1}: ${name}`;
-                rankingList.appendChild(li);
+            firebase.onValue(firebase.ref(db, 'rankings'), (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const sortedRankings = Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
+                    sortedRankings.forEach((entry, index) => {
+                        const li = document.createElement('li');
+                        li.textContent = `#${index + 1}: ${entry.name}`;
+                        rankingList.appendChild(li);
+                    });
+                }
             });
         }
 
@@ -138,14 +158,16 @@
             const nameInput = document.getElementById('username');
             const name = nameInput.value.trim();
             if (name) {
-                if (!rankings.includes(name)) {
-                    rankings.push(name); // Add user to rankings
-                    localStorage.setItem('rankings', JSON.stringify(rankings)); // Save to localStorage
+                const newUserRef = firebase.push(firebase.ref(db, 'rankings'));
+                newUserRef.set({
+                    name: name,
+                    timestamp: Date.now()
+                }).then(() => {
                     displayRankings();
                     alert(`Welcome, ${name}! You've been added to the rankings.`);
-                } else {
-                    alert(`${name}, you're already on the rankings.`);
-                }
+                }).catch((error) => {
+                    console.error('Error adding user:', error);
+                });
                 nameInput.value = ''; // Clear input field
             } else {
                 alert('Please enter a valid name.');
