@@ -1,142 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ilx's website</title>
+<body>
+    <h1>Welcome to the Ranking Website</h1>
+    <input type="text" id="username" placeholder="Enter your name" />
+    <button onclick="submitName()">Submit Name</button>
+    
+    <h2>Ranking List</h2>
+    <ul id="rankingList"></ul>
+
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js"></script>
-    <style>
-        body {
-            margin: 0;
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-            color: white;
-            text-align: center;
-        }
-
-        header {
-            padding: 20px;
-            background-color: rgba(0, 0, 0, 0.6);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            position: sticky;
-            top: 0;
-        }
-
-        header h1 {
-            margin: 0;
-            font-size: 2.5rem;
-            letter-spacing: 2px;
-        }
-
-        .hero {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 80vh;
-            padding: 20px;
-        }
-
-        .hero input, .hero button {
-            padding: 10px 20px;
-            margin: 5px;
-            border: none;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-
-        .hero input {
-            background: white;
-            color: #333;
-        }
-
-        .hero button {
-            background: #ffd700;
-            color: #333;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        .hero button:hover {
-            background: #e3b800;
-        }
-
-        .ranking {
-            margin-top: 20px;
-            font-size: 1rem;
-            color: #ffd700;
-        }
-
-        .ranking ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .ranking li {
-            margin: 5px 0;
-        }
-
-        footer {
-            padding: 10px 20px;
-            background-color: rgba(0, 0, 0, 0.6);
-            position: relative;
-            bottom: 0;
-            font-size: 0.9rem;
-        }
-
-        footer p {
-            margin: 0;
-        }
-
-        @media (max-width: 768px) {
-            header h1 {
-                font-size: 2rem;
-            }
-
-            .hero h2 {
-                font-size: 1.8rem;
-            }
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>Ahlaan ahlan b nas l MIP</h1>
-    </header>
-    
-    <div class="hero">
-        <h2>Enter your name to join the rank list!</h2>
-        <input id="username" type="text" placeholder="Enter your name">
-        <button onclick="addUser()">Submit</button>
-        <div id="ranking" class="ranking">
-            <h3>Visitor Rankings:</h3>
-            <ul id="rankingList"></ul>
-        </div>
-    </div>
-
-    <footer>
-        <p>&copy; 2024 Aesthetic Designs. All Rights Reserved.</p>
-    </footer>
-
     <script>
-        // Firebase configuration
+        // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyChj3URPFU7TVGyllTCSAPv6wmkMFG3fAw",
+            authDomain: "ilx-s-database.firebaseapp.com",
+            databaseURL: "https://ilx-s-database-default-rtdb.firebaseio.com",
+            projectId: "ilx-s-database",
+            storageBucket: "ilx-s-database.firebasestorage.app",
+            messagingSenderId: "713475036724",
+            appId: "1:713475036724:web:6bdb32636760bb2e509c61"
         };
 
         // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.getDatabase(app);
 
-        // Function to display rankings
+        // Function to submit a name to the ranking
+        function submitName() {
+            const username = document.getElementById('username').value.trim();
+            if (username) {
+                const newEntryRef = firebase.push(firebase.ref(db, 'rankings'));
+                newEntryRef.set({
+                    name: username,
+                    timestamp: Date.now()
+                })
+                .then(() => {
+                    alert(`${username} has been added to the ranking!`);
+                    displayRankings(); // Refresh the ranking list
+                })
+                .catch((error) => console.error('Error adding name:', error));
+            } else {
+                alert('Please enter a valid name.');
+            }
+        }
+
+        // Function to display the ranking list
         function displayRankings() {
             const rankingList = document.getElementById('rankingList');
             rankingList.innerHTML = ''; // Clear the list
@@ -153,29 +60,7 @@
             });
         }
 
-        // Function to add a new user
-        function addUser() {
-            const nameInput = document.getElementById('username');
-            const name = nameInput.value.trim();
-            if (name) {
-                const newUserRef = firebase.push(firebase.ref(db, 'rankings'));
-                newUserRef.set({
-                    name: name,
-                    timestamp: Date.now()
-                }).then(() => {
-                    displayRankings();
-                    alert(`Welcome, ${name}! You've been added to the rankings.`);
-                }).catch((error) => {
-                    console.error('Error adding user:', error);
-                });
-                nameInput.value = ''; // Clear input field
-            } else {
-                alert('Please enter a valid name.');
-            }
-        }
-
-        // Display rankings on page load
+        // Initial display of rankings when the page loads
         displayRankings();
     </script>
 </body>
-</html>
