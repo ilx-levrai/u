@@ -1,19 +1,98 @@
-<body>
-    <h1>Welcome to the Ranking Website</h1>
-    <input type="text" id="username" placeholder="Enter your name" />
-    <button onclick="submitName()">Submit Name</button>
-    
-    <h2>Ranking List</h2>
-    <ul id="rankingList"></ul>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Visitor Ranking</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            text-align: center;
+        }
 
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js"></script>
+        header {
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            position: sticky;
+            top: 0;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+
+        .container {
+            padding: 20px;
+            text-align: center;
+        }
+
+        input, button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        input {
+            background: white;
+            color: #333;
+        }
+
+        button {
+            background: #ffd700;
+            color: #333;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #e3b800;
+        }
+
+        .ranking {
+            margin-top: 20px;
+            font-size: 1rem;
+        }
+
+        footer {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to the Global Rank List!</h1>
+    </header>
+
+    <div class="container">
+        <h2>Enter your name to join the ranking:</h2>
+        <input id="username" type="text" placeholder="Your Name">
+        <button onclick="addToRanking()">Join</button>
+        <div class="ranking">
+            <h3>Global Rankings:</h3>
+            <ol id="rankingList"></ol>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Global Rankings</p>
+    </footer>
+
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js"></script>
+
     <script>
-        // Your web app's Firebase configuration
+        // Firebase Configuration (replace with your own config)
         const firebaseConfig = {
             apiKey: "AIzaSyChj3URPFU7TVGyllTCSAPv6wmkMFG3fAw",
             authDomain: "ilx-s-database.firebaseapp.com",
-            databaseURL: "https://ilx-s-database-default-rtdb.firebaseio.com",
             projectId: "ilx-s-database",
             storageBucket: "ilx-s-database.firebasestorage.app",
             messagingSenderId: "713475036724",
@@ -22,45 +101,42 @@
 
         // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.getDatabase(app);
+        const db = firebase.firestore();
 
-        // Function to submit a name to the ranking
-        function submitName() {
+        // Function to fetch and display rankings
+        async function fetchRankings() {
+            const rankingList = document.getElementById('rankingList');
+            const querySnapshot = await db.collection('rankings').orderBy('rank', 'asc').get();
+            rankingList.innerHTML = querySnapshot.docs.map(doc => {
+                const data = doc.data();
+                return `<li>#${data.rank}: ${data.name}</li>`;
+            }).join('');
+        }
+
+        // Function to add a user to the rankings
+        async function addToRanking() {
             const username = document.getElementById('username').value.trim();
             if (username) {
-                const newEntryRef = firebase.push(firebase.ref(db, 'rankings'));
-                newEntryRef.set({
-                    name: username,
-                    timestamp: Date.now()
-                })
-                .then(() => {
-                    alert(`${username} has been added to the ranking!`);
-                    displayRankings(); // Refresh the ranking list
-                })
-                .catch((error) => console.error('Error adding name:', error));
+                const rankingsRef = db.collection('rankings');
+                const existingUser = await rankingsRef.where('name', '==', username).get();
+
+                if (!existingUser.empty) {
+                    alert(`${username}, you are already ranked!`);
+                } else {
+                    const count = (await rankingsRef.get()).size;
+                    const newRank = count + 1;
+                    await rankingsRef.add({ name: username, rank: newRank });
+                    alert(`${username}, you are now ranked #${newRank}!`);
+                    fetchRankings();
+                }
+                document.getElementById('username').value = ''; // Clear input field
             } else {
                 alert('Please enter a valid name.');
             }
         }
 
-        // Function to display the ranking list
-        function displayRankings() {
-            const rankingList = document.getElementById('rankingList');
-            rankingList.innerHTML = ''; // Clear the list
-            firebase.onValue(firebase.ref(db, 'rankings'), (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    const sortedRankings = Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
-                    sortedRankings.forEach((entry, index) => {
-                        const li = document.createElement('li');
-                        li.textContent = `#${index + 1}: ${entry.name}`;
-                        rankingList.appendChild(li);
-                    });
-                }
-            });
-        }
-
-        // Initial display of rankings when the page loads
-        displayRankings();
+        // Fetch rankings on page load
+        fetchRankings();
     </script>
 </body>
+</html>
